@@ -234,7 +234,7 @@
         <h3>Google Sheet Sync</h3>
         <div class="form-group">
           <label>Published CSV URL</label>
-          <input type="text" id="sheet-url" class="sheet-url-input" placeholder="https://docs.google.com/spreadsheets/d/e/2PACX-1vQxIxWc3CDe6aayrypgLhSuHne0Y-M4WRQy8euBeqnh7MtdyFzuKGDfvb_OYwAQdb0cvePUiOfFjECh/pub?output=csv">
+          <input type="text" id="sheet-url" class="sheet-url-input" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" value="https://docs.google.com/spreadsheets/d/e/2PACX-1vQxIxWc3CDe6aayrypgLhSuHne0Y-M4WRQy8euBeqnh7MtdyFzuKGDfvb_OYwAQdb0cvePUiOfFjECh/pub?output=csv">
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn" onclick="syncFromSheet()">Sync Entries from Sheet</button>
@@ -396,7 +396,7 @@ function loadState() {
     if (saved) {
       const s = JSON.parse(saved);
       state.entries = s.entries || [];
-      state.sheetUrl = s.sheetUrl || '';
+      state.sheetUrl = s.sheetUrl || 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQxIxWc3CDe6aayrypgLhSuHne0Y-M4WRQy8euBeqnh7MtdyFzuKGDfvb_OYwAQdb0cvePUiOfFjECh/pub?output=csv';
       if (s.roster && s.roster.length) state.roster = s.roster;
       if (s.password) state.password = s.password;
     }
@@ -841,18 +841,19 @@ async function syncFromSheet() {
     lines.slice(1).forEach(line => {
       const cols = parseCSVLine(line);
       if (cols.length < 3) return;
-      const name = cols[0]?.trim();
       const owner = cols[1]?.trim();
-      const golfers = cols.slice(2,8).map(c => c.trim()).filter(Boolean);
-      if (name && golfers.length) entries.push({ name, owner, golfers });
+      const golferCell = cols[2]?.trim();
+      if (!owner || !golferCell) return;
+      const golfers = golferCell.split(',').map(g => g.trim()).filter(Boolean);
+      if (owner && golfers.length) entries.push({ name: owner, owner: owner, golfers });
     });
-    if (!entries.length) throw new Error('No valid rows found. Check sheet format.');
+    if (!entries.length) throw new Error('No valid rows found.');
     state.entries = entries;
     saveState();
     renderEntryManageList();
     document.getElementById('entry-count').textContent = state.entries.length;
     renderStandings();
-    document.getElementById('sync-status').textContent = '✓ Synced '+entries.length+' entries from sheet at '+new Date().toLocaleTimeString();
+    document.getElementById('sync-status').textContent = '✓ Synced '+entries.length+' entries at '+new Date().toLocaleTimeString();
   } catch(e) {
     document.getElementById('sync-status').textContent = 'Error: '+e.message;
   }
@@ -911,6 +912,7 @@ function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').re
 
 // ---- INIT ----
 loadState();
+if (!state.entries.length && state.sheetUrl) syncFromSheet();
 renderStandings();
 fetchLiveScores();
 </script>
