@@ -77,6 +77,22 @@
   .chip.made-cut { border-color: #10b981; color: #065f46; background: #f0fdf4; }
   .chip.missed-cut { border-color: #d1d5db; color: #9ca3af; text-decoration: line-through; background: #f9fafb; }
   .chip.leading { border-color: var(--gold); color: #92400e; background: #fffbeb; }
+  .entry-row { cursor: pointer; }
+  .entry-row:hover td { background: #fdf6e3; }
+  .entry-row td { transition: background 0.1s; }
+  .expand-row td { padding: 0; border-bottom: 2px solid var(--gold); }
+  .expand-inner { padding: 14px 16px; background: #f5f0e4; }
+  .golfer-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+  .golfer-card { background: var(--white); border: 1px solid var(--border); border-radius: 2px; padding: 10px 12px; }
+  .golfer-card.leading { border-color: var(--gold); background: #fffdf5; }
+  .golfer-card.missed-cut { opacity: 0.55; }
+  .golfer-card-name { font-family: Arial, sans-serif; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+  .golfer-card-score { font-family: 'Courier New', monospace; font-size: 20px; font-weight: bold; margin: 4px 0 2px; }
+  .golfer-card-meta { font-family: Arial, sans-serif; font-size: 11px; color: var(--gray); }
+  .golfer-card-earn { font-family: Arial, sans-serif; font-size: 11px; color: #065f46; margin-top: 4px; }
+  .expand-summary { font-family: Arial, sans-serif; font-size: 11px; color: var(--gray); margin-top: 10px; letter-spacing: 0.5px; }
+  .chevron { float: right; font-size: 12px; color: var(--gray); transition: transform 0.2s; }
+  .chevron.open { transform: rotate(180deg); }
 
   /* LIVE LEADERBOARD */
   .pos-col { font-family: Arial, sans-serif; font-size: 12px; color: var(--gray); width: 44px; }
@@ -218,7 +234,7 @@
         <h3>Google Sheet Sync</h3>
         <div class="form-group">
           <label>Published CSV URL</label>
-          <input type="text" id="sheet-url" class="sheet-url-input" placeholder="https://docs.google.com/spreadsheets/d/e/2PACX-1vQxIxWc3CDe6aayrypgLhSuHne0Y-M4WRQy8euBeqnh7MtdyFzuKGDfvb_OYwAQdb0cvePUiOfFjECh/pub?output=csv">
+          <input type="text" id="sheet-url" class="sheet-url-input" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" value="">
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn" onclick="syncFromSheet()">Sync Entries from Sheet</button>
@@ -521,6 +537,40 @@ function calcEntry(entry) {
   return { totalScore: hasScores ? totalScore : null, totalEarnings, golferDetails };
 }
 
+let expandedRow = null;
+
+function toggleExpandRow(idx) {
+  expandedRow = expandedRow === idx ? null : idx;
+  renderStandings();
+}
+
+function buildGolferCards(golferDetails) {
+  let html = '<div class="golfer-card-grid">';
+  golferDetails.forEach(g => {
+    const gs = getGolferScore(g.name);
+    let cardClass = 'golfer-card';
+    if (gs) {
+      if (!g.madeCut) cardClass = 'golfer-card missed-cut';
+      else if (g.pos === '1' || g.pos === 'T1') cardClass = 'golfer-card leading';
+    }
+    const sc = g.scoreToPar;
+    const scStr = sc === null ? '—' : sc === 0 ? 'E' : (sc > 0 ? '+'+sc : sc);
+    const scClass = sc === null ? '' : sc < 0 ? 'score-under' : sc === 0 ? 'score-even' : 'score-over';
+    const pos = g.pos || '—';
+    const thru = g.thru ? 'Thru ' + g.thru : '—';
+    const earn = g.earnings ? '$' + g.earnings.toLocaleString() : '';
+    const mcLabel = !g.madeCut ? ' · MC' : g.withdrawn ? ' · WD' : '';
+    html += '<div class="'+cardClass+'">';
+    html += '<div class="golfer-card-name">'+esc(g.name.split(' ').pop())+'</div>';
+    html += '<div class="golfer-card-score '+scClass+'">'+scStr+'</div>';
+    html += '<div class="golfer-card-meta">'+esc(pos)+mcLabel+' &nbsp;·&nbsp; '+esc(thru)+'</div>';
+    if (earn) html += '<div class="golfer-card-earn">'+earn+'</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
 function renderStandings() {
   const wrap = document.getElementById('standings-table-wrap');
   const search = document.getElementById('search-standings')?.value?.toLowerCase() || '';
@@ -531,7 +581,6 @@ function renderStandings() {
     return;
   }
 
-  // Calculate and sort
   const hasScores = Object.keys(state.liveScores).length > 0;
   let rows = entries.map(e => ({ ...e, ...calcEntry(e) }));
 
@@ -547,19 +596,21 @@ function renderStandings() {
     return 0;
   });
 
+  const colCount = hasScores ? 4 : 3;
+
   let html = '<table><thead><tr>';
-  html += '<th>#</th>';
+  html += '<th style="width:44px">#</th>';
   html += '<th onclick="sortStandings(\'name\')" class="'+(col==='name'?'sorted':'')+'">Entry '+sortArrow('name')+'</th>';
   if (hasScores) html += '<th onclick="sortStandings(\'score\')" class="'+(col==='score'?'sorted':'')+'">Score '+sortArrow('score')+'</th>';
   html += '<th onclick="sortStandings(\'earnings\')" class="'+(col==='earnings'?'sorted':'')+'">Total Earnings '+sortArrow('earnings')+'</th>';
-  html += '<th class="hide-mobile">Golfers</th>';
   html += '</tr></thead><tbody>';
 
   rows.forEach((row, idx) => {
     const rankClass = idx === 0 ? 'rank rank-1' : idx === 1 ? 'rank rank-2' : idx === 2 ? 'rank rank-3' : 'rank';
-    html += '<tr>';
+    const isOpen = expandedRow === idx;
+    html += '<tr class="entry-row" onclick="toggleExpandRow('+idx+')">';
     html += '<td class="'+rankClass+'">'+(idx+1)+'</td>';
-    html += '<td><div class="entry-name">'+esc(row.name)+'</div><div class="entry-owner">'+esc(row.owner||'')+'</div></td>';
+    html += '<td><div class="entry-name">'+esc(row.name)+'<span class="chevron'+(isOpen?' open':'')+'">▾</span></div><div class="entry-owner">'+esc(row.owner||'')+'</div></td>';
     if (hasScores) {
       const sc = row.totalScore;
       const scClass = sc === null ? '' : sc < 0 ? 'score-under' : sc === 0 ? 'score-even' : 'score-over';
@@ -567,20 +618,18 @@ function renderStandings() {
       html += '<td><span class="score-num '+scClass+'">'+scStr+'</span></td>';
     }
     html += '<td><span class="earnings">$'+row.totalEarnings.toLocaleString()+'</span></td>';
-    html += '<td class="hide-mobile"><div class="golfer-chips">';
-    row.golferDetails.forEach(g => {
-      const gs = getGolferScore(g.name);
-      let chipClass = 'chip';
-      if (gs) {
-        if (!g.madeCut) chipClass = 'chip missed-cut';
-        else if (g.pos === '1' || g.pos === 'T1') chipClass = 'chip leading';
-        else chipClass = 'chip made-cut';
-      }
-      const scoreStr = gs && g.scoreToPar !== null ? ' ('+(g.scoreToPar===0?'E':g.scoreToPar>0?'+'+g.scoreToPar:g.scoreToPar)+')' : '';
-      html += '<span class="'+chipClass+'">'+esc(g.name)+scoreStr+'</span>';
-    });
-    html += '</div></td>';
     html += '</tr>';
+
+    if (isOpen) {
+      const salaryCap = SALARY_CAP;
+      const salaryUsed = row.golferDetails.reduce((s, g) => s + (g.salary||0), 0);
+      const salaryLeft = salaryCap - salaryUsed;
+      html += '<tr class="expand-row"><td colspan="'+colCount+'">';
+      html += '<div class="expand-inner">';
+      html += buildGolferCards(row.golferDetails);
+      html += '<div class="expand-summary">ALL 6 GOLFERS COUNT &nbsp;·&nbsp; $'+salaryUsed.toLocaleString()+' SALARY USED · $'+salaryLeft.toLocaleString()+' LEFT</div>';
+      html += '</div></td></tr>';
+    }
   });
   html += '</tbody></table>';
   wrap.innerHTML = html;
