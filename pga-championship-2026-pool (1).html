@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026 PGA Championship Pool</title>
+<style>
+  :root {
+    --navy: #0a1628;
+    --navy-mid: #142240;
+    --gold: #c9a84c;
+    --gold-light: #e8c97a;
+    --gold-pale: #f5e8c0;
+    --cream: #faf7f0;
+    --red: #cc3333;
+    --green: #1a7a3a;
+    --gray: #6b7280;
+    --border: #e0d8c8;
+    --white: #ffffff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Georgia', serif; background: var(--cream); color: var(--navy); min-height: 100vh; }
+
+  /* HEADER */
+  .header { background: var(--navy); color: var(--white); padding: 0; }
+  .header-inner { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem 1.5rem; }
+  .header-badge { display: inline-block; font-family: 'Arial Narrow', Arial, sans-serif; font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); border: 1px solid var(--gold); padding: 4px 12px; margin-bottom: 1rem; }
+  .header h1 { font-size: 2rem; font-weight: normal; letter-spacing: 0.5px; line-height: 1.2; margin-bottom: 0.25rem; }
+  .header h1 span { color: var(--gold); }
+  .header-sub { font-family: Arial, sans-serif; font-size: 13px; color: #8fa3c4; margin-bottom: 1.5rem; }
+  .header-meta { display: flex; gap: 2rem; flex-wrap: wrap; padding-top: 1rem; border-top: 1px solid #1e3a6e; font-family: Arial, sans-serif; font-size: 12px; color: #8fa3c4; }
+  .header-meta strong { color: var(--gold-light); display: block; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2px; }
+
+  /* NAV TABS */
+  .tabs { background: var(--navy-mid); border-bottom: 2px solid var(--gold); }
+  .tabs-inner { max-width: 1100px; margin: 0 auto; display: flex; }
+  .tab { font-family: Arial, sans-serif; font-size: 13px; letter-spacing: 0.5px; padding: 12px 20px; cursor: pointer; color: #8fa3c4; border: none; background: none; transition: color 0.15s; }
+  .tab.active { color: var(--gold); border-bottom: 2px solid var(--gold); margin-bottom: -2px; }
+  .tab:hover:not(.active) { color: #cbd5e1; }
+
+  /* MAIN */
+  .main { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+
+  /* STATUS BAR */
+  .status-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
+  .status-pill { display: inline-flex; align-items: center; gap: 6px; font-family: Arial, sans-serif; font-size: 12px; background: var(--white); border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #10b981; }
+  .status-dot.pre { background: var(--gold); }
+  .refresh-btn { font-family: Arial, sans-serif; font-size: 12px; background: none; border: 1px solid var(--border); border-radius: 4px; padding: 5px 12px; cursor: pointer; color: var(--navy); display: flex; align-items: center; gap: 6px; }
+  .refresh-btn:hover { background: var(--white); border-color: var(--gold); }
+
+  /* POOL STANDINGS TABLE */
+  .card { background: var(--white); border: 1px solid var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 1.5rem; }
+  .card-header { background: var(--navy); color: var(--gold-light); font-family: Arial, sans-serif; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead th { background: #f5f0e6; font-family: Arial, sans-serif; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--gray); padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--border); cursor: pointer; white-space: nowrap; user-select: none; }
+  thead th:hover { background: #ede8d8; }
+  thead th.sorted { color: var(--navy); }
+  thead th .sort-arrow { margin-left: 4px; opacity: 0.5; }
+  thead th.sorted .sort-arrow { opacity: 1; }
+  tbody tr { border-bottom: 1px solid #f0ebe0; }
+  tbody tr:hover { background: #fdf9f0; }
+  tbody td { padding: 10px 12px; vertical-align: middle; }
+  .rank { font-family: Arial, sans-serif; font-size: 12px; font-weight: bold; color: var(--gray); width: 36px; }
+  .rank-1 { color: var(--gold); }
+  .rank-2 { color: #9ca3af; }
+  .rank-3 { color: #b45309; }
+  .entry-name { font-weight: bold; }
+  .entry-owner { font-family: Arial, sans-serif; font-size: 12px; color: var(--gray); margin-top: 2px; }
+  .score-num { font-family: 'Courier New', monospace; font-size: 14px; font-weight: bold; }
+  .score-under { color: var(--red); }
+  .score-even { color: var(--navy); }
+  .score-over { color: var(--navy); }
+  .earnings { font-family: Arial, sans-serif; font-size: 13px; }
+  .golfer-chips { display: flex; flex-wrap: wrap; gap: 4px; max-width: 420px; }
+  .chip { font-family: Arial, sans-serif; font-size: 11px; padding: 2px 7px; border-radius: 2px; border: 1px solid var(--border); background: #faf7f0; white-space: nowrap; }
+  .chip.made-cut { border-color: #10b981; color: #065f46; background: #f0fdf4; }
+  .chip.missed-cut { border-color: #d1d5db; color: #9ca3af; text-decoration: line-through; background: #f9fafb; }
+  .chip.leading { border-color: var(--gold); color: #92400e; background: #fffbeb; }
+
+  /* LIVE LEADERBOARD */
+  .pos-col { font-family: Arial, sans-serif; font-size: 12px; color: var(--gray); width: 44px; }
+  .golfer-name { font-weight: bold; }
+  .country { font-family: Arial, sans-serif; font-size: 11px; color: var(--gray); }
+  .thru { font-family: Arial, sans-serif; font-size: 12px; color: var(--gray); }
+  .score-td { font-family: 'Courier New', monospace; font-weight: bold; }
+  .salary-td { font-family: Arial, sans-serif; font-size: 12px; color: var(--gray); }
+  .pool-count { font-family: Arial, sans-serif; font-size: 11px; background: var(--navy); color: var(--gold-light); border-radius: 10px; padding: 1px 7px; }
+
+  /* COMMISSIONER TAB */
+  .comm-section { margin-bottom: 2rem; }
+  .comm-section h3 { font-size: 16px; font-weight: normal; margin-bottom: 1rem; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .form-group { margin-bottom: 1rem; }
+  .form-group label { display: block; font-family: Arial, sans-serif; font-size: 12px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--gray); margin-bottom: 6px; }
+  .form-group input, .form-group select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 2px; font-size: 14px; font-family: inherit; background: var(--white); }
+  .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--gold); }
+  .btn { font-family: Arial, sans-serif; font-size: 13px; padding: 9px 20px; border: 1px solid var(--navy); background: var(--navy); color: var(--white); border-radius: 2px; cursor: pointer; letter-spacing: 0.5px; }
+  .btn:hover { background: var(--navy-mid); }
+  .btn-secondary { background: transparent; color: var(--navy); }
+  .btn-secondary:hover { background: #f5f0e6; }
+  .btn-danger { background: #991b1b; border-color: #991b1b; }
+  .golfer-select-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; max-height: 320px; overflow-y: auto; border: 1px solid var(--border); padding: 10px; border-radius: 2px; background: var(--white); margin-top: 6px; }
+  .golfer-check { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 4px; cursor: pointer; border-radius: 2px; }
+  .golfer-check:hover { background: #f5f0e6; }
+  .golfer-check input { cursor: pointer; }
+  .entry-list-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid #f0ebe0; }
+  .entry-list-item:last-child { border-bottom: none; }
+  .alert { font-family: Arial, sans-serif; font-size: 13px; padding: 10px 14px; border-radius: 2px; margin-bottom: 1rem; }
+  .alert-success { background: #f0fdf4; border: 1px solid #86efac; color: #166534; }
+  .alert-error { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; }
+  .purse-note { font-family: Arial, sans-serif; font-size: 12px; color: var(--gray); background: #fffbeb; border: 1px solid #fde68a; padding: 8px 12px; border-radius: 2px; margin-bottom: 1rem; }
+  .lock-screen { text-align: center; padding: 3rem 1.5rem; }
+  .lock-screen input { width: 240px; margin: 1rem auto; display: block; padding: 10px; border: 1px solid var(--border); border-radius: 2px; font-size: 15px; text-align: center; letter-spacing: 2px; }
+  .trophies { display: flex; gap: 6px; }
+  .trophy { width: 24px; height: 24px; }
+  .salary-display { font-family: Arial, sans-serif; font-size: 12px; color: var(--gray); margin-top: 4px; }
+  .salary-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 4px; }
+  .salary-fill { height: 100%; border-radius: 2px; background: var(--gold); transition: width 0.3s; }
+  .salary-over .salary-fill { background: var(--red); }
+  .filter-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+  .filter-row input { padding: 7px 10px; border: 1px solid var(--border); border-radius: 2px; font-size: 13px; width: 220px; }
+  .sheet-url-input { font-size: 12px; color: var(--gray); font-family: 'Courier New', monospace; }
+  #sync-status { font-family: Arial, sans-serif; font-size: 12px; color: var(--gray); margin-top: 6px; }
+  .no-data { text-align: center; padding: 3rem; color: var(--gray); font-family: Arial, sans-serif; font-size: 14px; }
+  .loading { text-align: center; padding: 2rem; color: var(--gray); font-family: Arial, sans-serif; font-size: 13px; }
+  @media (max-width: 700px) {
+    .header h1 { font-size: 1.4rem; }
+    .golfer-chips { max-width: 100%; }
+    .hide-mobile { display: none; }
+    .golfer-select-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="header-badge">108th PGA Championship</div>
+    <h1>Wanamaker <span>Pool</span> 2026</h1>
+    <div class="header-sub">Aronimink Golf Club &nbsp;·&nbsp; Newtown Square, Pennsylvania &nbsp;·&nbsp; May 14–17, 2026</div>
+    <div class="header-meta">
+      <div><strong>Format</strong>Salary Cap · $50,000</div>
+      <div><strong>Roster Size</strong>6 Golfers</div>
+      <div><strong>Purse</strong>~$19M (estimated)</div>
+      <div><strong>Scoring</strong>Official PGA of America payouts</div>
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tabs-inner">
+    <button class="tab active" onclick="showTab('standings')">Pool Standings</button>
+    <button class="tab" onclick="showTab('leaderboard')">Live Leaderboard</button>
+    <button class="tab" onclick="showTab('commissioner')">Commissioner</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <div class="status-pill">
+        <span class="status-dot pre" id="status-dot"></span>
+        <span id="status-text">Pre-tournament (May 14 start)</span>
+      </div>
+      <div class="status-pill" id="last-refresh-pill">Scores: not yet loaded</div>
+    </div>
+    <button class="refresh-btn" onclick="refreshAll()">↻ Refresh</button>
+  </div>
+
+  <!-- STANDINGS TAB -->
+  <div id="tab-standings">
+    <div class="purse-note">⚠ Purse estimated at $19M based on 2025 PGA Championship. Official figure announced Saturday, May 16. Earnings will auto-update once official payouts are published in the Google Sheet.</div>
+
+    <div class="card">
+      <div class="card-header">
+        <span>Pool Standings</span>
+        <div class="filter-row" style="margin:0;">
+          <input type="text" placeholder="Search entries..." id="search-standings" oninput="renderStandings()" style="width:180px;padding:4px 8px;border:1px solid #2e4a7a;background:#142240;color:#e2e8f0;border-radius:2px;font-size:12px;">
+        </div>
+      </div>
+      <div id="standings-table-wrap">
+        <div class="no-data">No entries yet. Add entries in the Commissioner tab, or sync from your Google Sheet.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVE LEADERBOARD TAB -->
+  <div id="tab-leaderboard" style="display:none;">
+    <div class="card">
+      <div class="card-header">
+        <span>Tournament Leaderboard</span>
+        <span id="tourney-round-label" style="font-size:11px;color:#8fa3c4;">Via ESPN · Auto-refresh every 3 min</span>
+      </div>
+      <div id="leaderboard-table-wrap">
+        <div class="loading">Loading live scores...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMMISSIONER TAB -->
+  <div id="tab-commissioner" style="display:none;">
+    <div id="comm-lock">
+      <div class="lock-screen">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:#9ca3af;margin:0 auto 1rem;display:block"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        <div style="font-family:Arial,sans-serif;color:#6b7280;font-size:14px;margin-bottom:8px;">Commissioner access required</div>
+        <input type="password" id="comm-password-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkCommPass()">
+        <button class="btn" onclick="checkCommPass()">Unlock</button>
+        <div id="comm-pass-error" style="font-family:Arial,sans-serif;font-size:12px;color:#991b1b;margin-top:8px;display:none;">Incorrect password</div>
+      </div>
+    </div>
+
+    <div id="comm-content" style="display:none;">
+
+      <!-- Google Sheet Sync -->
+      <div class="comm-section">
+        <h3>Google Sheet Sync</h3>
+        <div class="form-group">
+          <label>Published CSV URL</label>
+          <input type="text" id="sheet-url" class="sheet-url-input" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" value="">
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn" onclick="syncFromSheet()">Sync Entries from Sheet</button>
+          <button class="btn btn-secondary" onclick="saveSheetUrl()">Save URL</button>
+        </div>
+        <div id="sync-status"></div>
+        <div style="margin-top:1rem;font-family:Arial,sans-serif;font-size:12px;color:#6b7280;">
+          Sheet format (columns, row 1 = header): <code>Entry Name, Owner, G1, G2, G3, G4, G5, G6</code>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div class="comm-section">
+        <h3>Pool Settings</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div class="form-group">
+            <label>Commissioner Password</label>
+            <input type="password" id="set-password" placeholder="Set new password">
+          </div>
+          <div class="form-group">
+            <label>Salary Cap ($)</label>
+            <input type="number" id="set-salarycap" value="50000">
+          </div>
+        </div>
+        <button class="btn btn-secondary" onclick="saveSettings()">Save Settings</button>
+      </div>
+
+      <!-- Add Entry -->
+      <div class="comm-section">
+        <h3>Add Entry Manually</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div class="form-group">
+            <label>Entry Name</label>
+            <input type="text" id="add-entry-name" placeholder="e.g. Team Birdie">
+          </div>
+          <div class="form-group">
+            <label>Owner</label>
+            <input type="text" id="add-entry-owner" placeholder="e.g. Pat">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Select 6 Golfers (salary cap: $<span id="cap-display">50,000</span>)</label>
+          <div class="salary-display">Used: $<span id="salary-used">0</span> / $<span id="salary-max">50,000</span></div>
+          <div class="salary-bar"><div class="salary-fill" id="salary-fill" style="width:0%"></div></div>
+          <input type="text" placeholder="Search golfers..." id="golfer-search" oninput="filterGolfers()" style="margin:8px 0;width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:2px;font-size:13px;">
+          <div class="golfer-select-grid" id="golfer-select-grid"></div>
+        </div>
+        <div id="add-entry-alert"></div>
+        <button class="btn" onclick="addEntry()">Add Entry</button>
+      </div>
+
+      <!-- Manage Entries -->
+      <div class="comm-section">
+        <h3>Manage Entries (<span id="entry-count">0</span>)</h3>
+        <div class="card" style="margin-bottom:0;">
+          <div id="entry-manage-list">
+            <div class="no-data">No entries yet.</div>
+          </div>
+        </div>
+        <div style="margin-top:1rem;display:flex;gap:8px;">
+          <button class="btn btn-danger" onclick="if(confirm('Delete ALL entries?'))clearAllEntries()">Clear All Entries</button>
+          <button class="btn btn-secondary" onclick="exportEntries()">Export JSON</button>
+        </div>
+      </div>
+
+      <!-- Golfer Roster -->
+      <div class="comm-section">
+        <h3>Golfer Roster (DraftKings Salaries)</h3>
+        <button class="btn btn-secondary" onclick="showRosterEditor()">Edit Roster</button>
+        <div id="roster-editor" style="display:none;margin-top:1rem;">
+          <div style="font-family:Arial,sans-serif;font-size:12px;color:#6b7280;margin-bottom:8px;">One golfer per line: Name,$Salary (e.g. Scottie Scheffler,$11500)</div>
+          <textarea id="roster-text" rows="20" style="width:100%;font-size:12px;font-family:'Courier New',monospace;border:1px solid var(--border);padding:8px;border-radius:2px;"></textarea>
+          <div style="margin-top:8px;display:flex;gap:8px;">
+            <button class="btn" onclick="saveRoster()">Save Roster</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('roster-editor').style.display='none'">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /comm-content -->
+  </div><!-- /tab-commissioner -->
+
+</div><!-- /main -->
+
+<script>
+const DEFAULT_PASSWORD = 'wanamaker2026';
+const SALARY_CAP = 50000;
+
+// 2026 PGA Championship payout table (positions 1-70, estimated from 2025 $19M structure)
+// 2025 winner: $3,420,000 from $19M. Scale percentages from official 2025 data.
+const PAYOUT_TABLE = {
+  1:  3420000, 2: 2052000, 3: 1254000, 4: 855000,
+  5: 694700,   6: 617100,  7: 577300,  8: 551400,
+  9: 525500,  10: 499600, 11: 473700, 12: 447800,
+  13: 427600, 14: 411100, 15: 394700, 16: 378200,
+  17: 361800, 18: 345300, 19: 328900, 20: 312400,
+  21: 295900, 22: 279500, 23: 263000, 24: 246600,
+  25: 230100, 26: 213700, 27: 201000, 28: 188300,
+  29: 175600, 30: 162900, 31: 153100, 32: 143300,
+  33: 133500, 34: 123700, 35: 113900, 36: 104700,
+  37: 99200,  38: 93700,  39: 88200,  40: 82700,
+  41: 78100,  42: 74400,  43: 70800,  44: 67100,
+  45: 63400,  46: 59800,  47: 56100,  48: 52400,
+  49: 49600,  50: 46800,  51: 44000,  52: 41200,
+  53: 38400,  54: 35600,  55: 33800,  56: 32400,
+  57: 31000,  58: 29600,  59: 28200,  60: 26800,
+  61: 25400,  62: 24000,  63: 22700,  64: 21500,
+  65: 20200,  66: 18900,  67: 17700,  68: 16400,
+  69: 15200,  70: 14000
+};
+
+// Default 2026 PGA Championship field (top players + DK-style salaries)
+const DEFAULT_ROSTER = [
+  ['Scottie Scheffler', 11500], ['Rory McIlroy', 10800], ['Cameron Young', 10200],
+  ['Matt Fitzpatrick', 9800], ['Jon Rahm', 9500], ['Xander Schauffele', 9200],
+  ['Collin Morikawa', 9000], ['Viktor Hovland', 8800], ['Tommy Fleetwood', 8600],
+  ['Tony Finau', 8400], ['Patrick Cantlay', 8200], ['Brian Harman', 8000],
+  ['Wyndham Clark', 7900], ['Justin Thomas', 7800], ['Jordan Spieth', 7700],
+  ['Shane Lowry', 7600], ['Min Woo Lee', 7500], ['Corey Conners', 7400],
+  ['Keegan Bradley', 7300], ['Jason Day', 7200], ['Hideki Matsuyama', 7100],
+  ['Si Woo Kim', 7000], ['Sam Burns', 6900], ['Sungjae Im', 6800],
+  ['Adam Scott', 6700], ['Chris Kirk', 6600], ['Tom Kim', 6500],
+  ['Harris English', 6400], ['Denny McCarthy', 6300], ['Russell Henley', 6200],
+  ['Taylor Pendrith', 6100], ['Sepp Straka', 6000], ['Nick Taylor', 5900],
+  ['Keith Mitchell', 5800], ['Mark Hubbard', 5700], ['Christiaan Bezuidenhout', 5600],
+  ['J.J. Spaun', 5500], ['Sahith Theegala', 5400], ['Maverick McNealy', 5300],
+  ['Davis Riley', 5200], ['Beau Hossler', 5100], ['Alex Smalley', 5000],
+  ['Brendan Steele', 4900], ['Ryan Gerard', 4800], ['Brandon Wu', 4700],
+  ['Akshay Bhatia', 7800], ['Ludvig Aberg', 9100], ['Max Greyserman', 5200],
+  ['Michael Kim', 4600], ['Ben Griffin', 5300], ['Thorbjorn Olesen', 5100],
+  ['Marco Penge', 4900], ['Joe Highsmith', 4800], ['Byeong Hun An', 5000],
+  ['Rickie Fowler', 7200], ['Billy Horschel', 6100], ['Aaron Rai', 5700],
+  ['Emiliano Grillo', 5400], ['Ryan Fox', 5500], ['Nicolai Hojgaard', 6300],
+  ['Alex Fitzpatrick', 6600], ['Kristoffer Reitan', 6900], ['Harry Hall', 5600],
+  ['Cam Davis', 5300], ['Lucas Glover', 5800], ['Adam Hadwin', 5200],
+  ['Taylor Moore', 5000], ['Garrick Higgo', 4800], ['Webb Simpson', 5100],
+  ['Phil Mickelson', 5700], ['Brooks Koepka', 8500], ['Dustin Johnson', 7500],
+  ['Patrick Reed', 6200], ['Joaquin Niemann', 7000], ['Harold Varner III', 5200],
+  ['Talor Gooch', 6400], ['Mito Pereira', 5600], ['Thomas Detry', 5400],
+  ['Zach Johnson', 4700], ['Hunter Mahan', 4600], ['Stewart Cink', 4500]
+];
+
+// State
+let state = {
+  entries: [],
+  roster: DEFAULT_ROSTER,
+  liveScores: {},
+  commUnlocked: false,
+  sheetUrl: '',
+  sortStandings: { col: 'earnings', dir: 'desc' },
+  sortLeaderboard: { col: 'pos', dir: 'asc' },
+  lastRefresh: null
+};
+
+// ---- PERSISTENCE ----
+function loadState() {
+  try {
+    const saved = localStorage.getItem('pgapool2026');
+    if (saved) {
+      const s = JSON.parse(saved);
+      state.entries = s.entries || [];
+      state.sheetUrl = s.sheetUrl || '';
+      if (s.roster && s.roster.length) state.roster = s.roster;
+      if (s.password) state.password = s.password;
+    }
+  } catch(e) {}
+}
+function saveState() {
+  try {
+    localStorage.setItem('pgapool2026', JSON.stringify({
+      entries: state.entries,
+      sheetUrl: state.sheetUrl,
+      roster: state.roster,
+      password: state.password
+    }));
+  } catch(e) {}
+}
+
+// ---- TABS ----
+function showTab(t) {
+  ['standings','leaderboard','commissioner'].forEach(id => {
+    document.getElementById('tab-'+id).style.display = id === t ? '' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach((el,i) => {
+    el.classList.toggle('active', ['standings','leaderboard','commissioner'][i] === t);
+  });
+  if (t === 'leaderboard' && !state.lastRefresh) fetchLiveScores();
+  if (t === 'commissioner') renderCommissioner();
+  if (t === 'standings') renderStandings();
+}
+
+// ---- ESPN LIVE SCORES ----
+async function fetchLiveScores() {
+  document.getElementById('leaderboard-table-wrap').innerHTML = '<div class="loading">Fetching live scores from ESPN...</div>';
+  try {
+    const url = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
+    const resp = await fetch(url);
+    const data = await resp.json();
+    parseESPNScores(data);
+    state.lastRefresh = new Date();
+    document.getElementById('last-refresh-pill').textContent = 'Scores: ' + state.lastRefresh.toLocaleTimeString();
+  } catch(e) {
+    document.getElementById('leaderboard-table-wrap').innerHTML = '<div class="no-data">Could not load live scores. Check connection.<br><small style="color:#9ca3af;">'+e.message+'</small></div>';
+  }
+  renderLeaderboard();
+  renderStandings();
+}
+
+function normalizeStr(s) {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+function parseESPNScores(data) {
+  state.liveScores = {};
+  state.tourneyRound = '';
+  try {
+    const events = data.events || [];
+    if (!events.length) return;
+    const event = events[0];
+    state.tourneyName = event.name || 'PGA Championship';
+    // Round status
+    const comps = event.competitions || [];
+    if (comps.length) {
+      const comp = comps[0];
+      const status = comp.status || {};
+      state.tourneyRound = status.type?.description || '';
+      // Competitors
+      const competitors = comp.competitors || [];
+      competitors.forEach(c => {
+        const nameRaw = c.athlete?.displayName || c.athlete?.fullName || '';
+        const key = normalizeStr(nameRaw);
+        let scoreToPar = 0;
+        // Try score.displayValue first (more reliable mid-tournament)
+        const scoreDisp = c.score?.displayValue;
+        if (scoreDisp !== undefined && scoreDisp !== null) {
+          if (scoreDisp === 'E') scoreToPar = 0;
+          else { const n = parseInt(scoreDisp); if (!isNaN(n)) scoreToPar = n; }
+        } else {
+          // fallback to statistics
+          const stats = c.statistics || [];
+          if (stats[0]) {
+            const v = stats[0].value;
+            if (v === 'E') scoreToPar = 0;
+            else { const n = parseInt(v); if (!isNaN(n)) scoreToPar = n; }
+          }
+        }
+        const posRaw = c.status?.position?.displayName || c.status?.position?.id || '';
+        const posNum = parseInt(posRaw);
+        const thru = c.status?.thru || '';
+        const madeCut = c.status?.type?.id !== 'cut';
+        const withdrawn = c.status?.type?.id === 'WD';
+        state.liveScores[key] = { name: nameRaw, scoreToPar, pos: posRaw, posNum: isNaN(posNum) ? 999 : posNum, thru, madeCut, withdrawn, salary: 0 };
+      });
+    }
+  } catch(e) { console.warn('ESPN parse error', e); }
+}
+
+function getGolferScore(golferName) {
+  const key = normalizeStr(golferName);
+  if (state.liveScores[key]) return state.liveScores[key];
+  // fuzzy: try partial match
+  for (const k of Object.keys(state.liveScores)) {
+    const kparts = k.split(' ');
+    const nparts = key.split(' ');
+    if (kparts[kparts.length-1] === nparts[nparts.length-1] && kparts[0][0] === nparts[0][0]) {
+      return state.liveScores[k];
+    }
+  }
+  return null;
+}
+
+function positionToEarnings(posStr) {
+  if (!posStr) return 0;
+  const clean = posStr.toString().replace('T','').replace('t','');
+  const n = parseInt(clean);
+  if (isNaN(n) || n > 70) return 0;
+  // If tied, split the sum of tied positions (simplified: just award the position's value)
+  // For ties we use the floor position payout (standard for pool purposes)
+  return PAYOUT_TABLE[n] || 0;
+}
+
+// ---- STANDINGS ----
+function calcEntry(entry) {
+  let totalScore = 0;
+  let totalEarnings = 0;
+  let golferDetails = [];
+  let hasScores = Object.keys(state.liveScores).length > 0;
+  entry.golfers.forEach(name => {
+    const gs = getGolferScore(name);
+    const salary = getRosterSalary(name);
+    if (gs) {
+      totalScore += gs.scoreToPar;
+      const earn = positionToEarnings(gs.pos);
+      totalEarnings += earn;
+      golferDetails.push({ name, scoreToPar: gs.scoreToPar, pos: gs.pos, thru: gs.thru, earnings: earn, madeCut: gs.madeCut, withdrawn: gs.withdrawn, salary });
+    } else {
+      golferDetails.push({ name, scoreToPar: null, pos: '', thru: '', earnings: 0, madeCut: true, withdrawn: false, salary });
+    }
+  });
+  return { totalScore: hasScores ? totalScore : null, totalEarnings, golferDetails };
+}
+
+function renderStandings() {
+  const wrap = document.getElementById('standings-table-wrap');
+  const search = document.getElementById('search-standings')?.value?.toLowerCase() || '';
+  let entries = state.entries.filter(e => !search || e.name.toLowerCase().includes(search) || (e.owner||'').toLowerCase().includes(search));
+
+  if (!entries.length) {
+    wrap.innerHTML = '<div class="no-data">No entries yet. Add entries in the Commissioner tab.</div>';
+    return;
+  }
+
+  // Calculate and sort
+  const hasScores = Object.keys(state.liveScores).length > 0;
+  let rows = entries.map(e => ({ ...e, ...calcEntry(e) }));
+
+  const { col, dir } = state.sortStandings;
+  rows.sort((a, b) => {
+    let va, vb;
+    if (col === 'earnings') { va = a.totalEarnings; vb = b.totalEarnings; }
+    else if (col === 'score') { va = a.totalScore ?? 999; vb = b.totalScore ?? 999; }
+    else if (col === 'name') { va = a.name; vb = b.name; }
+    else { va = a.totalEarnings; vb = b.totalEarnings; }
+    if (va < vb) return dir === 'asc' ? -1 : 1;
+    if (va > vb) return dir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  let html = '<table><thead><tr>';
+  html += '<th>#</th>';
+  html += '<th onclick="sortStandings(\'name\')" class="'+(col==='name'?'sorted':'')+'">Entry '+sortArrow('name')+'</th>';
+  if (hasScores) html += '<th onclick="sortStandings(\'score\')" class="'+(col==='score'?'sorted':'')+'">Score '+sortArrow('score')+'</th>';
+  html += '<th onclick="sortStandings(\'earnings\')" class="'+(col==='earnings'?'sorted':'')+'">Total Earnings '+sortArrow('earnings')+'</th>';
+  html += '<th class="hide-mobile">Golfers</th>';
+  html += '</tr></thead><tbody>';
+
+  rows.forEach((row, idx) => {
+    const rankClass = idx === 0 ? 'rank rank-1' : idx === 1 ? 'rank rank-2' : idx === 2 ? 'rank rank-3' : 'rank';
+    html += '<tr>';
+    html += '<td class="'+rankClass+'">'+(idx+1)+'</td>';
+    html += '<td><div class="entry-name">'+esc(row.name)+'</div><div class="entry-owner">'+esc(row.owner||'')+'</div></td>';
+    if (hasScores) {
+      const sc = row.totalScore;
+      const scClass = sc === null ? '' : sc < 0 ? 'score-under' : sc === 0 ? 'score-even' : 'score-over';
+      const scStr = sc === null ? '—' : sc === 0 ? 'E' : (sc > 0 ? '+'+sc : sc);
+      html += '<td><span class="score-num '+scClass+'">'+scStr+'</span></td>';
+    }
+    html += '<td><span class="earnings">$'+row.totalEarnings.toLocaleString()+'</span></td>';
+    html += '<td class="hide-mobile"><div class="golfer-chips">';
+    row.golferDetails.forEach(g => {
+      const gs = getGolferScore(g.name);
+      let chipClass = 'chip';
+      if (gs) {
+        if (!g.madeCut) chipClass = 'chip missed-cut';
+        else if (g.pos === '1' || g.pos === 'T1') chipClass = 'chip leading';
+        else chipClass = 'chip made-cut';
+      }
+      const scoreStr = gs && g.scoreToPar !== null ? ' ('+(g.scoreToPar===0?'E':g.scoreToPar>0?'+'+g.scoreToPar:g.scoreToPar)+')' : '';
+      html += '<span class="'+chipClass+'">'+esc(g.name)+scoreStr+'</span>';
+    });
+    html += '</div></td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+function sortStandings(col) {
+  if (state.sortStandings.col === col) state.sortStandings.dir = state.sortStandings.dir === 'asc' ? 'desc' : 'asc';
+  else { state.sortStandings.col = col; state.sortStandings.dir = col === 'name' ? 'asc' : 'desc'; }
+  renderStandings();
+}
+
+function sortArrow(col) {
+  if (state.sortStandings.col !== col) return '<span class="sort-arrow">↕</span>';
+  return '<span class="sort-arrow">'+(state.sortStandings.dir === 'asc' ? '↑' : '↓')+'</span>';
+}
+
+// ---- LEADERBOARD ----
+function renderLeaderboard() {
+  const wrap = document.getElementById('leaderboard-table-wrap');
+  const roundLabel = document.getElementById('tourney-round-label');
+  if (roundLabel && state.tourneyRound) roundLabel.textContent = state.tourneyRound + ' · Via ESPN · Auto-refresh 3 min';
+
+  const scores = Object.values(state.liveScores);
+  if (!scores.length) {
+    wrap.innerHTML = '<div class="no-data">No live scores available yet. Tournament starts May 14.<br><small style="color:#9ca3af;font-family:Arial,sans-serif;font-size:12px;">Click Refresh to try loading scores.</small></div>';
+    return;
+  }
+
+  scores.sort((a, b) => a.posNum - b.posNum || a.scoreToPar - b.scoreToPar);
+
+  // Count how many pool entries each golfer appears in
+  const poolCounts = {};
+  state.entries.forEach(e => e.golfers.forEach(g => {
+    const k = normalizeStr(g);
+    poolCounts[k] = (poolCounts[k] || 0) + 1;
+  }));
+
+  let html = '<table><thead><tr>';
+  html += '<th class="pos-col">Pos</th>';
+  html += '<th>Golfer</th>';
+  html += '<th>Score</th>';
+  html += '<th class="hide-mobile">Thru</th>';
+  html += '<th class="hide-mobile">Est. Earnings</th>';
+  html += '<th class="hide-mobile">In Pool</th>';
+  html += '</tr></thead><tbody>';
+
+  scores.forEach(g => {
+    const scStr = g.scoreToPar === 0 ? 'E' : g.scoreToPar > 0 ? '+'+g.scoreToPar : g.scoreToPar;
+    const scClass = g.scoreToPar < 0 ? 'score-under' : g.scoreToPar === 0 ? 'score-even' : 'score-over';
+    const earn = positionToEarnings(g.pos);
+    const earnStr = earn ? '$'+earn.toLocaleString() : '—';
+    const poolN = poolCounts[normalizeStr(g.name)] || 0;
+    const mcStyle = !g.madeCut ? 'opacity:0.45;' : '';
+    html += '<tr style="'+mcStyle+'">';
+    html += '<td class="pos-col">'+(g.withdrawn ? 'WD' : g.pos || '—')+'</td>';
+    html += '<td><div class="golfer-name">'+esc(g.name)+'</div></td>';
+    html += '<td class="score-td '+scClass+'">'+scStr+'</td>';
+    html += '<td class="thru hide-mobile">'+(g.thru||'—')+'</td>';
+    html += '<td class="hide-mobile earnings">'+earnStr+'</td>';
+    html += '<td class="hide-mobile">'+(poolN > 0 ? '<span class="pool-count">'+poolN+'</span>' : '')+'</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+// ---- AUTO REFRESH ----
+setInterval(() => {
+  const lb = document.getElementById('tab-leaderboard');
+  if (lb && lb.style.display !== 'none') fetchLiveScores();
+}, 180000);
+
+// ---- COMMISSIONER ----
+function checkCommPass() {
+  const val = document.getElementById('comm-password-input').value;
+  const correct = state.password || DEFAULT_PASSWORD;
+  if (val === correct) {
+    state.commUnlocked = true;
+    document.getElementById('comm-lock').style.display = 'none';
+    document.getElementById('comm-content').style.display = '';
+    renderCommissioner();
+  } else {
+    document.getElementById('comm-pass-error').style.display = '';
+  }
+}
+
+function renderCommissioner() {
+  if (!state.commUnlocked) return;
+  document.getElementById('sheet-url').value = state.sheetUrl || '';
+  document.getElementById('set-salarycap').value = SALARY_CAP;
+  document.getElementById('entry-count').textContent = state.entries.length;
+  renderEntryManageList();
+  renderGolferSelectGrid();
+}
+
+function renderEntryManageList() {
+  const list = document.getElementById('entry-manage-list');
+  if (!state.entries.length) { list.innerHTML = '<div class="no-data">No entries.</div>'; return; }
+  list.innerHTML = state.entries.map((e, idx) => `
+    <div class="entry-list-item">
+      <div>
+        <strong>${esc(e.name)}</strong>
+        <span style="font-family:Arial,sans-serif;font-size:12px;color:#6b7280;margin-left:8px;">${esc(e.owner||'')}</span>
+        <div style="font-family:Arial,sans-serif;font-size:11px;color:#9ca3af;margin-top:2px;">${e.golfers.map(g=>esc(g)).join(', ')}</div>
+      </div>
+      <button class="btn btn-secondary" style="padding:5px 10px;font-size:12px;" onclick="deleteEntry(${idx})">Remove</button>
+    </div>
+  `).join('');
+}
+
+function renderGolferSelectGrid() {
+  const grid = document.getElementById('golfer-select-grid');
+  const filter = document.getElementById('golfer-search')?.value?.toLowerCase() || '';
+  const filtered = state.roster.filter(([n]) => !filter || n.toLowerCase().includes(filter));
+  grid.innerHTML = filtered.map(([n, s]) =>
+    `<label class="golfer-check">
+      <input type="checkbox" name="golfer-pick" value="${esc(n)}" onchange="updateSalaryBar()">
+      <span>${esc(n)}</span>
+      <span style="font-family:Arial,sans-serif;font-size:11px;color:#9ca3af;margin-left:auto;">$${s.toLocaleString()}</span>
+    </label>`
+  ).join('');
+  updateSalaryBar();
+}
+
+function filterGolfers() { renderGolferSelectGrid(); }
+
+function updateSalaryBar() {
+  const checked = [...document.querySelectorAll('input[name="golfer-pick"]:checked')];
+  let used = 0;
+  checked.forEach(c => { used += getRosterSalary(c.value); });
+  const cap = SALARY_CAP;
+  const pct = Math.min(100, (used/cap)*100);
+  document.getElementById('salary-used').textContent = used.toLocaleString();
+  document.getElementById('salary-max').textContent = cap.toLocaleString();
+  document.getElementById('cap-display').textContent = cap.toLocaleString();
+  const fill = document.getElementById('salary-fill');
+  fill.style.width = pct + '%';
+  fill.parentElement.classList.toggle('salary-over', used > cap);
+}
+
+function getRosterSalary(name) {
+  const k = normalizeStr(name);
+  const found = state.roster.find(([n]) => normalizeStr(n) === k);
+  return found ? found[1] : 0;
+}
+
+function addEntry() {
+  const name = document.getElementById('add-entry-name').value.trim();
+  const owner = document.getElementById('add-entry-owner').value.trim();
+  const checked = [...document.querySelectorAll('input[name="golfer-pick"]:checked')].map(c => c.value);
+  const alertEl = document.getElementById('add-entry-alert');
+
+  if (!name) { alertEl.innerHTML = '<div class="alert alert-error">Entry name is required.</div>'; return; }
+  if (checked.length !== 6) { alertEl.innerHTML = '<div class="alert alert-error">Select exactly 6 golfers ('+checked.length+' selected).</div>'; return; }
+  let used = 0; checked.forEach(g => { used += getRosterSalary(g); });
+  if (used > SALARY_CAP) { alertEl.innerHTML = '<div class="alert alert-error">Over salary cap by $'+(used-SALARY_CAP).toLocaleString()+'.</div>'; return; }
+
+  state.entries.push({ name, owner, golfers: checked });
+  saveState();
+  alertEl.innerHTML = '<div class="alert alert-success">Entry "'+esc(name)+'" added!</div>';
+  document.getElementById('add-entry-name').value = '';
+  document.getElementById('add-entry-owner').value = '';
+  document.querySelectorAll('input[name="golfer-pick"]:checked').forEach(c => c.checked = false);
+  updateSalaryBar();
+  renderEntryManageList();
+  document.getElementById('entry-count').textContent = state.entries.length;
+  setTimeout(() => alertEl.innerHTML = '', 3000);
+}
+
+function deleteEntry(idx) {
+  if (!confirm('Delete "'+state.entries[idx].name+'"?')) return;
+  state.entries.splice(idx, 1);
+  saveState();
+  renderEntryManageList();
+  document.getElementById('entry-count').textContent = state.entries.length;
+  renderStandings();
+}
+
+function clearAllEntries() {
+  state.entries = [];
+  saveState();
+  renderEntryManageList();
+  document.getElementById('entry-count').textContent = 0;
+  renderStandings();
+}
+
+function saveSettings() {
+  const newPass = document.getElementById('set-password').value.trim();
+  if (newPass) { state.password = newPass; }
+  saveState();
+  alert('Settings saved.');
+}
+
+function saveSheetUrl() {
+  state.sheetUrl = document.getElementById('sheet-url').value.trim();
+  saveState();
+  document.getElementById('sync-status').textContent = 'URL saved.';
+}
+
+async function syncFromSheet() {
+  const url = document.getElementById('sheet-url').value.trim();
+  if (!url) { document.getElementById('sync-status').textContent = 'Enter a Google Sheet CSV URL first.'; return; }
+  document.getElementById('sync-status').textContent = 'Syncing...';
+  try {
+    const resp = await fetch(url);
+    const text = await resp.text();
+    const lines = text.trim().split('\n');
+    const entries = [];
+    lines.slice(1).forEach(line => {
+      const cols = parseCSVLine(line);
+      if (cols.length < 3) return;
+      const name = cols[0]?.trim();
+      const owner = cols[1]?.trim();
+      const golfers = cols.slice(2,8).map(c => c.trim()).filter(Boolean);
+      if (name && golfers.length) entries.push({ name, owner, golfers });
+    });
+    if (!entries.length) throw new Error('No valid rows found. Check sheet format.');
+    state.entries = entries;
+    saveState();
+    renderEntryManageList();
+    document.getElementById('entry-count').textContent = state.entries.length;
+    renderStandings();
+    document.getElementById('sync-status').textContent = '✓ Synced '+entries.length+' entries from sheet at '+new Date().toLocaleTimeString();
+  } catch(e) {
+    document.getElementById('sync-status').textContent = 'Error: '+e.message;
+  }
+}
+
+function parseCSVLine(line) {
+  const result = []; let cur = ''; let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { result.push(cur); cur = ''; }
+    else { cur += c; }
+  }
+  result.push(cur);
+  return result;
+}
+
+function exportEntries() {
+  const blob = new Blob([JSON.stringify(state.entries, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'pga-pool-2026-entries.json'; a.click();
+}
+
+function showRosterEditor() {
+  const ed = document.getElementById('roster-editor');
+  ed.style.display = ed.style.display === 'none' ? '' : 'none';
+  if (ed.style.display !== 'none') {
+    document.getElementById('roster-text').value = state.roster.map(([n,s]) => n+','+s).join('\n');
+  }
+}
+
+function saveRoster() {
+  const lines = document.getElementById('roster-text').value.trim().split('\n');
+  const roster = [];
+  lines.forEach(l => {
+    const parts = l.split(',');
+    if (parts.length >= 2) {
+      const name = parts.slice(0,-1).join(',').trim();
+      const sal = parseInt(parts[parts.length-1].replace(/\D/g,''));
+      if (name && !isNaN(sal)) roster.push([name, sal]);
+    }
+  });
+  if (!roster.length) { alert('No valid roster rows parsed.'); return; }
+  state.roster = roster;
+  saveState();
+  document.getElementById('roster-editor').style.display = 'none';
+  renderGolferSelectGrid();
+  alert('Roster saved ('+roster.length+' golfers).');
+}
+
+// ---- REFRESH ALL ----
+function refreshAll() { fetchLiveScores(); }
+
+// ---- HELPERS ----
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ---- INIT ----
+loadState();
+renderStandings();
+fetchLiveScores();
+</script>
+</body>
+</html>
