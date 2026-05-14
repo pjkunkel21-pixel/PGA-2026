@@ -391,6 +391,19 @@ let state = {
 };
 
 // ---- PERSISTENCE ----
+const HARDCODED_ENTRIES = [
+  {name:"Alec McFarlane", owner:"Alec McFarlane", golfers:["Cameron Young","Patrick Reed","Chris Gotterup","Sepp Straka","Rickie Fowler","Nicolas Echavarria"]},
+  {name:"Ben P", owner:"Ben P", golfers:["Scottie Scheffler","Chris Gotterup","Ben Griffin","Rickie Fowler","Alex Fitzpatrick","Matthew McCarty"]},
+  {name:"BEN.", owner:"BEN.", golfers:["Scottie Scheffler","Joaquin Niemann","J.J. Spaun","Rickie Fowler","Alex Smalley","Thomas Detry"]},
+  {name:"Blue", owner:"Blue", golfers:["Scottie Scheffler","Cameron Young","Shane Lowry","Michael Brennan","Hao-Tong Li","Ben Polland"]},
+  {name:"Matt", owner:"Matt", golfers:["Scottie Scheffler","Jon Rahm","Chris Gotterup","Nick Taylor","Matthew McCarty","Andrew Putnam"]},
+  {name:"Max", owner:"Max", golfers:["Scottie Scheffler","Xander Schauffele","Sam Burns","Max Homa","Max McGreevy","Michael Block"]},
+  {name:"Nihal", owner:"Nihal", golfers:["Jon Rahm","Tommy Fleetwood","Justin Rose","Jake Knapp","Dustin Johnson","Christiaan Bezuidenhout"]},
+  {name:"Pat", owner:"Pat", golfers:["Cameron Young","Xander Schauffele","Brooks Koepka","Rickie Fowler","Max Homa","Matthew McCarty"]},
+  {name:"Ruble", owner:"Ruble", golfers:["Cameron Young","Ludvig Aberg","Sepp Straka","Jacob Bridgeman","Rickie Fowler","Max Homa"]},
+  {name:"Ryan Mord", owner:"Ryan Mord", golfers:["Cameron Young","Tommy Fleetwood","Shane Lowry","Jason Day","Sungjae Im","Nicolai Hojgaard"]}
+];
+
 function loadState() {
   try {
     const saved = localStorage.getItem('pgapool2026');
@@ -402,6 +415,9 @@ function loadState() {
       if (s.password) state.password = s.password;
     }
   } catch(e) {}
+  // Always fall back to hardcoded entries if none loaded (covers mobile/fresh devices)
+  if (!state.entries.length) state.entries = HARDCODED_ENTRIES;
+  if (!state.sheetUrl) state.sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQxIxWc3CDe6aayrypgLhSuHne0Y-M4WRQy8euBeqnh7MtdyFzuKGDfvb_OYwAQdb0cvePUiOfFjECh/pub?output=csv';
 }
 function saveState() {
   try {
@@ -489,15 +505,32 @@ function parseESPNScores(data) {
   } catch(e) { console.warn('ESPN parse error', e); }
 }
 
+// Name aliases: sheet name -> ESPN name
+const NAME_ALIASES = {
+  'matthew mccarty': 'matt mccarty',
+  'nicolas echavarria': 'nico echavarria',
+  'haotong li': 'haotong li',
+  'hao-tong li': 'haotong li',
+  'jake knapp': 'jake knapp',
+  'nicolai hojgaard': 'nicolai hojgaard',
+  'nicolas hojgaard': 'nicolai hojgaard',
+  'ludvig aberg': 'ludvig aberg',
+  'joaquin niemann': 'joaquin niemann',
+};
+
 function getGolferScore(golferName) {
   const key = normalizeStr(golferName);
+  const aliasKey = NAME_ALIASES[key] || key;
+  if (state.liveScores[aliasKey]) return state.liveScores[aliasKey];
   if (state.liveScores[key]) return state.liveScores[key];
-  // fuzzy: try partial match
+  // fuzzy: last name + first initial match
   for (const k of Object.keys(state.liveScores)) {
     const kparts = k.split(' ');
-    const nparts = key.split(' ');
-    if (kparts[kparts.length-1] === nparts[nparts.length-1] && kparts[0][0] === nparts[0][0]) {
-      return state.liveScores[k];
+    const nparts = aliasKey.split(' ');
+    if (kparts.length >= 2 && nparts.length >= 2) {
+      if (kparts[kparts.length-1] === nparts[nparts.length-1] && kparts[0][0] === nparts[0][0]) {
+        return state.liveScores[k];
+      }
     }
   }
   return null;
@@ -514,28 +547,31 @@ function positionToEarnings(posStr) {
 // Build a tie-aware earnings map: everyone tied at position N shares the average
 // of payouts for positions N through N+(tieSize-1)
 function buildEarningsMap(liveScores) {
-  // Group by position number
-  const groups = {};
-  Object.values(liveScores).forEach(g => {
-    if (!g.pos || g.pos === '-') return;
-    const clean = g.pos.toString().replace(/^T/i, '');
-    const n = parseInt(clean);
-    if (isNaN(n)) return;
-    if (!groups[n]) groups[n] = [];
-    groups[n].push(g.name);
-  });
-  // For each group, average payouts across tied spots
+  // Group by score (scoreToPar) to correctly handle ties
+  // Sort all started players by score, then assign positions and average payouts across ties
+  const started = Object.values(liveScores).filter(g => g.pos !== '-' && g.thru !== '');
+  // Sort by scoreToPar ascending
+  started.sort((a, b) => a.scoreToPar - b.scoreToPar);
   const map = {};
-  Object.entries(groups).forEach(([posStr, names]) => {
-    const startPos = parseInt(posStr);
-    const count = names.length;
+  let i = 0;
+  while (i < started.length) {
+    const score = started[i].scoreToPar;
+    // Find all players with this score
+    let j = i;
+    while (j < started.length && started[j].scoreToPar === score) j++;
+    const tieSize = j - i;
+    const startPos = i + 1; // 1-based position
+    // Average payouts for positions startPos through startPos+tieSize-1
     let total = 0;
-    for (let i = 0; i < count; i++) {
-      total += (PAYOUT_TABLE[startPos + i] || 0);
+    for (let k = 0; k < tieSize; k++) {
+      total += (PAYOUT_TABLE[startPos + k] || 0);
     }
-    const avg = Math.round(total / count);
-    names.forEach(name => { map[normalizeStr(name)] = avg; });
-  });
+    const avg = Math.round(total / tieSize);
+    for (let k = i; k < j; k++) {
+      map[normalizeStr(started[k].name)] = avg;
+    }
+    i = j;
+  }
   return map;
 }
 
