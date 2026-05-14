@@ -504,13 +504,39 @@ function getGolferScore(golferName) {
 }
 
 function positionToEarnings(posStr) {
-  if (!posStr) return 0;
-  const clean = posStr.toString().replace('T','').replace('t','');
+  if (!posStr || posStr === '-') return 0;
+  const clean = posStr.toString().replace(/^T/i, '');
   const n = parseInt(clean);
   if (isNaN(n) || n > 70) return 0;
-  // If tied, split the sum of tied positions (simplified: just award the position's value)
-  // For ties we use the floor position payout (standard for pool purposes)
   return PAYOUT_TABLE[n] || 0;
+}
+
+// Build a tie-aware earnings map: everyone tied at position N shares the average
+// of payouts for positions N through N+(tieSize-1)
+function buildEarningsMap(liveScores) {
+  // Group by position number
+  const groups = {};
+  Object.values(liveScores).forEach(g => {
+    if (!g.pos || g.pos === '-') return;
+    const clean = g.pos.toString().replace(/^T/i, '');
+    const n = parseInt(clean);
+    if (isNaN(n)) return;
+    if (!groups[n]) groups[n] = [];
+    groups[n].push(g.name);
+  });
+  // For each group, average payouts across tied spots
+  const map = {};
+  Object.entries(groups).forEach(([posStr, names]) => {
+    const startPos = parseInt(posStr);
+    const count = names.length;
+    let total = 0;
+    for (let i = 0; i < count; i++) {
+      total += (PAYOUT_TABLE[startPos + i] || 0);
+    }
+    const avg = Math.round(total / count);
+    names.forEach(name => { map[normalizeStr(name)] = avg; });
+  });
+  return map;
 }
 
 // ---- STANDINGS ----
@@ -519,12 +545,13 @@ function calcEntry(entry) {
   let totalEarnings = 0;
   let golferDetails = [];
   let hasScores = Object.keys(state.liveScores).length > 0;
+  const earningsMap = hasScores ? buildEarningsMap(state.liveScores) : {};
   entry.golfers.forEach(name => {
     const gs = getGolferScore(name);
     const salary = getRosterSalary(name);
     if (gs) {
       totalScore += gs.scoreToPar;
-      const earn = positionToEarnings(gs.pos);
+      const earn = earningsMap[normalizeStr(name)] || 0;
       totalEarnings += earn;
       golferDetails.push({ name, scoreToPar: gs.scoreToPar, pos: gs.pos, thru: gs.thru, earnings: earn, madeCut: gs.madeCut, withdrawn: gs.withdrawn, salary });
     } else {
@@ -673,10 +700,11 @@ function renderLeaderboard() {
   html += '<th class="hide-mobile">In Pool</th>';
   html += '</tr></thead><tbody>';
 
+  const lbEarningsMap = buildEarningsMap(state.liveScores);
   scores.forEach(g => {
     const scStr = g.scoreToPar === 0 ? 'E' : g.scoreToPar > 0 ? '+'+g.scoreToPar : g.scoreToPar;
     const scClass = g.scoreToPar < 0 ? 'score-under' : g.scoreToPar === 0 ? 'score-even' : 'score-over';
-    const earn = positionToEarnings(g.pos);
+    const earn = lbEarningsMap[normalizeStr(g.name)] || 0;
     const earnStr = earn ? '$'+earn.toLocaleString() : '—';
     const poolN = poolCounts[normalizeStr(g.name)] || 0;
     const mcStyle = !g.madeCut ? 'opacity:0.45;' : '';
