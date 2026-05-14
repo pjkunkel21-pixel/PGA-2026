@@ -826,11 +826,11 @@ function saveSheetUrl() {
 }
 
 async function syncFromSheet() {
-  const url = document.getElementById('sheet-url').value.trim();
-  if (!url) { document.getElementById('sync-status').textContent = 'Enter a Google Sheet CSV URL first.'; return; }
-  document.getElementById('sync-status').textContent = 'Syncing...';
+  const url = (document.getElementById('sheet-url')?.value || state.sheetUrl || '').trim();
+  if (!url) { if(document.getElementById('sync-status')) document.getElementById('sync-status').textContent = 'Enter a Google Sheet CSV URL first.'; return; }
+  if(document.getElementById('sync-status')) document.getElementById('sync-status').textContent = 'Syncing...';
   try {
-    const resp = await fetch(url);
+    const resp = await fetch(url, { cache: 'no-store' });
     const text = await resp.text();
     const lines = text.trim().split('\n');
     const entries = [];
@@ -846,12 +846,13 @@ async function syncFromSheet() {
     if (!entries.length) throw new Error('No valid rows found.');
     state.entries = entries;
     saveState();
-    renderEntryManageList();
-    document.getElementById('entry-count').textContent = state.entries.length;
+    if (document.getElementById('entry-manage-list')) renderEntryManageList();
+    if (document.getElementById('entry-count')) document.getElementById('entry-count').textContent = state.entries.length;
     renderStandings();
-    document.getElementById('sync-status').textContent = '✓ Synced '+entries.length+' entries at '+new Date().toLocaleTimeString();
+    if (document.getElementById('sync-status')) document.getElementById('sync-status').textContent = '✓ Synced '+entries.length+' entries at '+new Date().toLocaleTimeString();
   } catch(e) {
-    document.getElementById('sync-status').textContent = 'Error: '+e.message;
+    if (document.getElementById('sync-status')) document.getElementById('sync-status').textContent = 'Error: '+e.message;
+    console.warn('Sheet sync failed:', e);
   }
 }
 
@@ -908,9 +909,10 @@ function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').re
 
 // ---- INIT ----
 loadState();
-if (!state.entries.length && state.sheetUrl) syncFromSheet();
 renderStandings();
 fetchLiveScores();
+// Always sync entries from sheet on load so all devices stay current
+if (state.sheetUrl) syncFromSheet();
 </script>
 </body>
 </html>
