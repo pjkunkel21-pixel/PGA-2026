@@ -188,6 +188,7 @@
   <!-- STANDINGS TAB -->
   <div id="tab-standings">
     <div class="purse-note">⚠ Purse estimated at $19M based on 2025 PGA Championship. Official figure announced Saturday, May 16. Earnings will auto-update once official payouts are published in the Google Sheet.</div>
+    <div id="standings-sync-status" style="font-family:Arial,sans-serif;font-size:12px;color:#6b7280;margin-bottom:8px;min-height:18px;"></div>
 
     <div class="card">
       <div class="card-header">
@@ -830,8 +831,10 @@ async function syncFromSheet() {
   if (!url) { if(document.getElementById('sync-status')) document.getElementById('sync-status').textContent = 'Enter a Google Sheet CSV URL first.'; return; }
   if(document.getElementById('sync-status')) document.getElementById('sync-status').textContent = 'Syncing...';
   try {
-    const resp = await fetch(url, { cache: 'no-store' });
+    const resp = await fetch(url, { cache: 'no-store', redirect: 'follow', mode: 'cors' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const text = await resp.text();
+    if (!text || text.trim().startsWith('<')) throw new Error('Got HTML instead of CSV — sheet may not be published');
     const lines = text.trim().split('\n');
     const entries = [];
     lines.slice(1).forEach(line => {
@@ -849,9 +852,13 @@ async function syncFromSheet() {
     if (document.getElementById('entry-manage-list')) renderEntryManageList();
     if (document.getElementById('entry-count')) document.getElementById('entry-count').textContent = state.entries.length;
     renderStandings();
-    if (document.getElementById('sync-status')) document.getElementById('sync-status').textContent = '✓ Synced '+entries.length+' entries at '+new Date().toLocaleTimeString();
+    const msg = '✓ ' + entries.length + ' entries loaded · ' + new Date().toLocaleTimeString();
+    if (document.getElementById('sync-status')) document.getElementById('sync-status').textContent = msg;
+    if (document.getElementById('standings-sync-status')) document.getElementById('standings-sync-status').textContent = msg;
   } catch(e) {
-    if (document.getElementById('sync-status')) document.getElementById('sync-status').textContent = 'Error: '+e.message;
+    const errMsg = 'Sync error: ' + e.message;
+    if (document.getElementById('sync-status')) document.getElementById('sync-status').textContent = errMsg;
+    if (document.getElementById('standings-sync-status')) document.getElementById('standings-sync-status').textContent = errMsg;
     console.warn('Sheet sync failed:', e);
   }
 }
