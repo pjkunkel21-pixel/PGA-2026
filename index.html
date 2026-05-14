@@ -430,7 +430,7 @@ function showTab(t) {
 async function fetchLiveScores() {
   document.getElementById('leaderboard-table-wrap').innerHTML = '<div class="loading">Fetching live scores from ESPN...</div>';
   try {
-    const url = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
+    const url = 'https://site.web.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
     const resp = await fetch(url);
     const data = await resp.json();
     parseESPNScores(data);
@@ -455,40 +455,36 @@ function parseESPNScores(data) {
     if (!events.length) return;
     const event = events[0];
     state.tourneyName = event.name || 'PGA Championship';
-    // Round status
     const comps = event.competitions || [];
-    if (comps.length) {
-      const comp = comps[0];
-      const status = comp.status || {};
-      state.tourneyRound = status.type?.description || '';
-      // Competitors
-      const competitors = comp.competitors || [];
-      competitors.forEach(c => {
-        const nameRaw = c.athlete?.displayName || c.athlete?.fullName || '';
-        const key = normalizeStr(nameRaw);
-        let scoreToPar = 0;
-        // Try score.displayValue first (more reliable mid-tournament)
-        const scoreDisp = c.score?.displayValue;
-        if (scoreDisp !== undefined && scoreDisp !== null) {
-          if (scoreDisp === 'E') scoreToPar = 0;
-          else { const n = parseInt(scoreDisp); if (!isNaN(n)) scoreToPar = n; }
-        } else {
-          // fallback to statistics
-          const stats = c.statistics || [];
-          if (stats[0]) {
-            const v = stats[0].value;
-            if (v === 'E') scoreToPar = 0;
-            else { const n = parseInt(v); if (!isNaN(n)) scoreToPar = n; }
-          }
-        }
-        const posRaw = c.status?.position?.displayName || c.status?.position?.id || '';
-        const posNum = parseInt(posRaw);
-        const thru = c.status?.thru || '';
-        const madeCut = c.status?.type?.id !== 'cut';
-        const withdrawn = c.status?.type?.id === 'WD';
-        state.liveScores[key] = { name: nameRaw, scoreToPar, pos: posRaw, posNum: isNaN(posNum) ? 999 : posNum, thru, madeCut, withdrawn, salary: 0 };
-      });
-    }
+    if (!comps.length) return;
+    const comp = comps[0];
+    state.tourneyRound = comp.status?.type?.detail || comp.status?.type?.description || '';
+    const competitors = comp.competitors || [];
+    competitors.forEach((c, idx) => {
+      const nameRaw = c.athlete?.displayName || c.athlete?.fullName || '';
+      if (!nameRaw) return;
+      const key = normalizeStr(nameRaw);
+      // score is a plain string like "-3", "E", "+1", or "-" (not started)
+      let scoreToPar = 0;
+      const scoreStr = c.score;
+      if (scoreStr === 'E' || scoreStr === '-') scoreToPar = 0;
+      else { const n = parseInt(scoreStr); if (!isNaN(n)) scoreToPar = n; }
+      // Position: use order field (1-based) as position for started players
+      // linescores[0].displayValue gives round score; order gives sort position
+      const linescore = c.linescores?.[0];
+      const notStarted = linescore?.displayValue === '-';
+      // Thru: count linescores in round 1
+      let thru = '';
+      if (!notStarted && linescore?.linescores) {
+        const holesPlayed = linescore.linescores.length;
+        thru = holesPlayed >= 18 ? 'F' : String(holesPlayed);
+      }
+      const posNum = notStarted ? 999 : (idx + 1);
+      const posStr = notStarted ? '-' : String(idx + 1);
+      const madeCut = true; // Round 1, nobody cut yet
+      const withdrawn = false;
+      state.liveScores[key] = { name: nameRaw, scoreToPar, pos: posStr, posNum, thru, madeCut, withdrawn, salary: 0 };
+    });
   } catch(e) { console.warn('ESPN parse error', e); }
 }
 
