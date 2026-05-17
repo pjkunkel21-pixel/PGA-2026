@@ -476,30 +476,47 @@ function parseESPNScores(data) {
     if (!comps.length) return;
     const comp = comps[0];
     state.tourneyRound = comp.status?.type?.detail || comp.status?.type?.description || '';
+    const currentPeriod = comp.status?.period || 1;
     const competitors = comp.competitors || [];
     competitors.forEach((c, idx) => {
       const nameRaw = c.athlete?.displayName || c.athlete?.fullName || '';
       if (!nameRaw) return;
       const key = normalizeStr(nameRaw);
-      // score is a plain string like "-3", "E", "+1", or "-" (not started)
+
+      // c.score is the TOTAL tournament score-to-par (cumulative all rounds)
       let scoreToPar = 0;
       const scoreStr = c.score;
-      if (scoreStr === 'E' || scoreStr === '-') scoreToPar = 0;
+      if (scoreStr === 'E' || scoreStr === '-' || scoreStr === '' || scoreStr == null) scoreToPar = 0;
       else { const n = parseInt(scoreStr); if (!isNaN(n)) scoreToPar = n; }
-      // Position: use order field (1-based) as position for started players
-      // linescores[0].displayValue gives round score; order gives sort position
-      const linescore = c.linescores?.[0];
-      const notStarted = linescore?.displayValue === '-';
-      // Thru: count linescores in round 1
+
+      // Thru: find current round's linescore and count holes played
+      const linescores = c.linescores || [];
+      const currentRoundLs = linescores.find(r => r.period === currentPeriod);
+      const prevRoundsComplete = linescores.filter(r => r.period < currentPeriod && (r.linescores||[]).length >= 18).length;
       let thru = '';
-      if (!notStarted && linescore?.linescores) {
-        const holesPlayed = linescore.linescores.length;
-        thru = holesPlayed >= 18 ? 'F' : String(holesPlayed);
+      let notStarted = false;
+      if (currentRoundLs) {
+        const holes = (currentRoundLs.linescores || []).length;
+        if (holes === 0 && currentRoundLs.displayValue === '-') {
+          // Current round not started — show rounds completed
+          thru = prevRoundsComplete > 0 ? 'R'+prevRoundsComplete : '-';
+          notStarted = prevRoundsComplete === 0;
+        } else {
+          thru = holes >= 18 ? 'F' : String(holes);
+        }
+      } else if (linescores.length === 0) {
+        notStarted = true;
+        thru = '-';
+      } else {
+        // All rounds in data are complete
+        thru = 'F';
       }
+
+      // Missed cut: fewer completed rounds than expected after cut
+      const madeCut = !(linescores.length < 2 && currentPeriod >= 3);
+      const withdrawn = scoreStr === 'WD';
       const posNum = notStarted ? 999 : (idx + 1);
       const posStr = notStarted ? '-' : String(idx + 1);
-      const madeCut = true; // Round 1, nobody cut yet
-      const withdrawn = false;
       state.liveScores[key] = { name: nameRaw, scoreToPar, pos: posStr, posNum, thru, madeCut, withdrawn, salary: 0 };
     });
   } catch(e) { console.warn('ESPN parse error', e); }
