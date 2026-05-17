@@ -461,7 +461,11 @@ async function fetchLiveScores() {
 }
 
 function normalizeStr(s) {
-  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  return s
+    .replace(/ø/g, 'o').replace(/Ø/g, 'o')  // ø Ø
+    .replace(/æ/g, 'ae').replace(/Æ/g, 'ae') // æ Æ
+    .replace(/å/g, 'a').replace(/Å/g, 'a')   // å Å
+    .normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 }
 
 function parseESPNScores(data) {
@@ -528,9 +532,8 @@ const NAME_ALIASES = {
   'nicolas echavarria': 'nico echavarria',
   'haotong li': 'haotong li',
   'hao-tong li': 'haotong li',
-  'nicolai hojgaard': 'nicolai hjgaard',
-  'nicolas hojgaard': 'nicolai hjgaard',
-  'rasmus hojgaard': 'rasmus hjgaard',
+  'nicolai hojgaard': 'nicolai hojgaard',
+  'rasmus hojgaard': 'rasmus hojgaard',
   'ludvig aberg': 'ludvig aberg',
   'joaquin niemann': 'joaquin niemann',
 };
