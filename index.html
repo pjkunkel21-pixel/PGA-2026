@@ -177,8 +177,8 @@
   <div class="status-bar">
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
       <div class="status-pill">
-        <span class="status-dot pre" id="status-dot"></span>
-        <span id="status-text">Pre-tournament (May 14 start)</span>
+        <span class="status-dot" id="status-dot" style="background:#10b981"></span>
+        <span id="status-text">Tournament complete · Final results</span>
       </div>
       <div class="status-pill" id="last-refresh-pill">Scores: not yet loaded</div>
     </div>
@@ -187,7 +187,7 @@
 
   <!-- STANDINGS TAB -->
   <div id="tab-standings">
-    <div class="purse-note">⚠ Purse estimated at $19M based on 2025 PGA Championship. Official figure announced Saturday, May 16. Earnings will auto-update once official payouts are published in the Google Sheet.</div>
+    <div class="purse-note" style="background:#f0fdf4;border-color:#86efac;color:#166534;">🏆 Tournament complete. Official purse: $20.5M. Winner: Aaron Rai (-9). Final earnings locked in from pgatour.com.</div>
     <div id="standings-sync-status" style="font-family:Arial,sans-serif;font-size:12px;color:#6b7280;margin-bottom:8px;min-height:18px;"></div>
 
     <div class="card">
@@ -324,27 +324,97 @@
 const DEFAULT_PASSWORD = 'wanamaker2026';
 const SALARY_CAP = 50000;
 
-// 2026 PGA Championship payout table (positions 1-70, estimated from 2025 $19M structure)
-// 2025 winner: $3,420,000 from $19M. Scale percentages from official 2025 data.
+// 2026 PGA Championship OFFICIAL final payouts ($20.5M purse)
+// Source: pgatour.com, May 17 2026. Winner: Aaron Rai -9
 const PAYOUT_TABLE = {
-  1:  3420000, 2: 2052000, 3: 1254000, 4: 855000,
-  5: 694700,   6: 617100,  7: 577300,  8: 551400,
-  9: 525500,  10: 499600, 11: 473700, 12: 447800,
-  13: 427600, 14: 411100, 15: 394700, 16: 378200,
-  17: 361800, 18: 345300, 19: 328900, 20: 312400,
-  21: 295900, 22: 279500, 23: 263000, 24: 246600,
-  25: 230100, 26: 213700, 27: 201000, 28: 188300,
-  29: 175600, 30: 162900, 31: 153100, 32: 143300,
-  33: 133500, 34: 123700, 35: 113900, 36: 104700,
-  37: 99200,  38: 93700,  39: 88200,  40: 82700,
-  41: 78100,  42: 74400,  43: 70800,  44: 67100,
-  45: 63400,  46: 59800,  47: 56100,  48: 52400,
-  49: 49600,  50: 46800,  51: 44000,  52: 41200,
-  53: 38400,  54: 35600,  55: 33800,  56: 32400,
-  57: 31000,  58: 29600,  59: 28200,  60: 26800,
-  61: 25400,  62: 24000,  63: 22700,  64: 21500,
-  65: 20200,  66: 18900,  67: 17700,  68: 16400,
-  69: 15200,  70: 14000
+  1: 3690000, 2: 2215200, 3: 1394800, 4: 980800,
+  5: 817900,  6: 727400,  7: 638000,  8: 582600,
+  9: 527200, 10: 471800, 11: 416400, 12: 394400,
+  13: 372400, 14: 350400, 15: 328400, 16: 306400,
+  17: 284400, 18: 262400, 19: 240400, 20: 218400,
+  21: 196400, 22: 174400, 23: 152400, 24: 130400,
+  25: 120400, 26: 110400, 27: 100400, 28: 90400,
+  29: 82400,  30: 74400,  31: 68400,  32: 62400,
+  33: 57900,  34: 53900,  35: 50348,  36: 47348,
+  37: 44848,  38: 42848,  39: 41348,  40: 39848,
+  41: 38348,  42: 36848,  43: 35348,  44: 34186,
+  45: 32686,  46: 31186,  47: 29686,  48: 28186,
+  49: 26686,  50: 25186,  51: 23686,  52: 22186,
+  53: 20686,  54: 19186,  55: 17686,  56: 16186,
+  57: 15186,  58: 14186,  59: 13186,  60: 12186,
+  61: 11186,  62: 10186,  63: 9686,   64: 9186,
+  65: 8686,   66: 8186,   67: 7686,   68: 7186,
+  69: 6686,   70: 6186
+};
+
+// OFFICIAL final scores and payouts locked in from pgatour.com
+const OFFICIAL_RESULTS = {
+  'aaron rai':                  { pos: 1,   score: -9, earnings: 3690000 },
+  'jon rahm':                   { pos: 2,   score: -6, earnings: 1804000 },
+  'alex smalley':               { pos: 2,   score: -6, earnings: 1804000 },
+  'justin thomas':              { pos: 4,   score: -5, earnings: 843867 },
+  'ludvig aberg':               { pos: 4,   score: -5, earnings: 843867 },
+  'ludvig aberg':               { pos: 4,   score: -5, earnings: 843867 },
+  'matti schmid':               { pos: 4,   score: -5, earnings: 843867 },
+  'cameron smith':              { pos: 7,   score: -4, earnings: 637050 },
+  'rory mcilroy':               { pos: 7,   score: -4, earnings: 637050 },
+  'xander schauffele':          { pos: 7,   score: -4, earnings: 637050 },
+  'kurt kitayama':              { pos: 10,  score: -3, earnings: 496708 },
+  'chris gotterup':             { pos: 10,  score: -3, earnings: 496708 },
+  'justin rose':                { pos: 10,  score: -3, earnings: 496708 },
+  'patrick reed':               { pos: 10,  score: -3, earnings: 496708 },
+  'matt fitzpatrick':           { pos: 14,  score: -2, earnings: 364763 },
+  'scottie scheffler':          { pos: 14,  score: -2, earnings: 364763 },
+  'max greyserman':             { pos: 14,  score: -2, earnings: 364763 },
+  'ben griffin':                { pos: 14,  score: -2, earnings: 364763 },
+  'jordan spieth':              { pos: 18,  score: -1, earnings: 229129 },
+  'stephan jaeger':             { pos: 18,  score: -1, earnings: 229129 },
+  'padraig harrington':         { pos: 18,  score: -1, earnings: 229129 },
+  'david puig':                 { pos: 18,  score: -1, earnings: 229129 },
+  'harris english':             { pos: 18,  score: -1, earnings: 229129 },
+  'min woo lee':                { pos: 18,  score: -1, earnings: 229129 },
+  'joaquin niemann':            { pos: 18,  score: -1, earnings: 229129 },
+  'maverick mcnealy':           { pos: 18,  score: -1, earnings: 229129 },
+  'alex noren':                 { pos: 26,  score: 0,  earnings: 125523 },
+  'cameron young':              { pos: 26,  score: 0,  earnings: 125523 },
+  'andrew novak':               { pos: 26,  score: 0,  earnings: 125523 },
+  'daniel hillier':             { pos: 26,  score: 0,  earnings: 125523 },
+  'tom hoge':                   { pos: 26,  score: 0,  earnings: 125523 },
+  'sam burns':                  { pos: 26,  score: 0,  earnings: 125523 },
+  'hideki matsuyama':           { pos: 26,  score: 0,  earnings: 125523 },
+  'bud cauley':                 { pos: 26,  score: 0,  earnings: 125523 },
+  'nick taylor':                { pos: 26,  score: 0,  earnings: 125523 },
+  'christiaan bezuidenhout':    { pos: 35,  score: 1,  earnings: 78806 },
+  'patrick cantlay':            { pos: 35,  score: 1,  earnings: 78806 },
+  'ryo hisatsune':              { pos: 35,  score: 1,  earnings: 78806 },
+  'daniel berger':              { pos: 35,  score: 1,  earnings: 78806 },
+  'ryan fox':                   { pos: 35,  score: 1,  earnings: 78806 },
+  'haotong li':                 { pos: 35,  score: 1,  earnings: 78806 },
+  'hao-tong li':                { pos: 35,  score: 1,  earnings: 78806 },
+  'aldrich potgieter':          { pos: 35,  score: 1,  earnings: 78806 },
+  'si woo kim':                 { pos: 35,  score: 1,  earnings: 78806 },
+  'martin kaymer':              { pos: 35,  score: 1,  earnings: 78806 },
+  'matt wallace':               { pos: 44,  score: 2,  earnings: 50348 },
+  'shane lowry':                { pos: 44,  score: 2,  earnings: 50348 },
+  'jhonattan vegas':            { pos: 44,  score: 2,  earnings: 50348 },
+  'denny mccarthy':             { pos: 44,  score: 2,  earnings: 50348 },
+  'chandler blanchet':          { pos: 44,  score: 2,  earnings: 50348 },
+  'taylor pendrith':            { pos: 44,  score: 2,  earnings: 50348 },
+  'dustin johnson':             { pos: 44,  score: 2,  earnings: 50348 },
+  'nicolai hojgaard':           { pos: 44,  score: 2,  earnings: 50348 },
+  'nicolai hjgaard':            { pos: 44,  score: 2,  earnings: 50348 },
+  'michael kim':                { pos: 44,  score: 2,  earnings: 50348 },
+  'kristoffer reitan':          { pos: 44,  score: 2,  earnings: 50348 },
+  'chris kirk':                 { pos: 44,  score: 2,  earnings: 50348 },
+  'collin morikawa':            { pos: 55,  score: 3,  earnings: 34186 },
+  'corey conners':              { pos: 55,  score: 3,  earnings: 34186 },
+  'andrew putnam':              { pos: 55,  score: 3,  earnings: 34186 },
+  'brooks koepka':              { pos: 55,  score: 3,  earnings: 34186 },
+  'tommy fleetwood':            { pos: 55,  score: 3,  earnings: 34186 },
+  'sungjae im':                 { pos: 55,  score: 3,  earnings: 34186 },
+  'sepp straka':                { pos: 55,  score: 3,  earnings: 34186 },
+  'jason day':                  { pos: 55,  score: 3,  earnings: 34186 },
+  'rickie fowler':              { pos: 55,  score: 3,  earnings: 34186 },
 };
 
 // Default 2026 PGA Championship field (top players + DK-style salaries)
@@ -567,32 +637,39 @@ function positionToEarnings(posStr) {
 // Build a tie-aware earnings map: everyone tied at position N shares the average
 // of payouts for positions N through N+(tieSize-1)
 function buildEarningsMap(liveScores) {
-  // Group by score (scoreToPar) to correctly handle ties
-  // Sort all started players by score, then assign positions and average payouts across ties
-  const started = Object.values(liveScores).filter(g => g.pos !== '-' && g.thru !== '');
-  // Sort by scoreToPar ascending
-  started.sort((a, b) => a.scoreToPar - b.scoreToPar);
   const map = {};
+
+  // If tournament is over, use official results directly
+  const officialKeys = Object.keys(OFFICIAL_RESULTS);
+  if (officialKeys.length > 0) {
+    officialKeys.forEach(k => { map[k] = OFFICIAL_RESULTS[k].earnings; });
+    return map;
+  }
+
+  // Live: group by scoreToPar, assign tied positions, average payouts
+  const started = Object.values(liveScores).filter(g => g.pos !== '-' && g.thru !== '');
+  started.sort((a, b) => a.scoreToPar - b.scoreToPar);
   let i = 0;
   while (i < started.length) {
     const score = started[i].scoreToPar;
-    // Find all players with this score
     let j = i;
     while (j < started.length && started[j].scoreToPar === score) j++;
     const tieSize = j - i;
-    const startPos = i + 1; // 1-based position
-    // Average payouts for positions startPos through startPos+tieSize-1
+    const startPos = i + 1;
     let total = 0;
-    for (let k = 0; k < tieSize; k++) {
-      total += (PAYOUT_TABLE[startPos + k] || 0);
-    }
+    for (let k = 0; k < tieSize; k++) total += (PAYOUT_TABLE[startPos + k] || 0);
     const avg = Math.round(total / tieSize);
-    for (let k = i; k < j; k++) {
-      map[normalizeStr(started[k].name)] = avg;
-    }
+    for (let k = i; k < j; k++) map[normalizeStr(started[k].name)] = avg;
     i = j;
   }
   return map;
+}
+
+// Get official score for a player (used when tournament is complete)
+function getOfficialScore(golferName) {
+  const key = normalizeStr(golferName);
+  const aliasKey = NAME_ALIASES[key] || key;
+  return OFFICIAL_RESULTS[aliasKey] || OFFICIAL_RESULTS[key] || null;
 }
 
 // ---- STANDINGS ----
@@ -600,18 +677,30 @@ function calcEntry(entry) {
   let totalScore = 0;
   let totalEarnings = 0;
   let golferDetails = [];
-  let hasScores = Object.keys(state.liveScores).length > 0;
+  const tourneyOver = Object.keys(OFFICIAL_RESULTS).length > 0;
+  const hasScores = tourneyOver || Object.keys(state.liveScores).length > 0;
   const earningsMap = hasScores ? buildEarningsMap(state.liveScores) : {};
+
   entry.golfers.forEach(name => {
-    const gs = getGolferScore(name);
     const salary = getRosterSalary(name);
-    if (gs) {
-      totalScore += gs.scoreToPar;
-      const earn = earningsMap[normalizeStr(name)] || 0;
-      totalEarnings += earn;
-      golferDetails.push({ name, scoreToPar: gs.scoreToPar, pos: gs.pos, thru: gs.thru, earnings: earn, madeCut: gs.madeCut, withdrawn: gs.withdrawn, salary });
+    const official = getOfficialScore(name);
+
+    if (tourneyOver && official) {
+      // Use locked-in official results
+      totalScore += official.score;
+      totalEarnings += official.earnings;
+      const posStr = official.pos === 1 ? '1' : 'T' + official.pos;
+      golferDetails.push({ name, scoreToPar: official.score, pos: posStr, thru: 'F', earnings: official.earnings, madeCut: official.earnings > 0, withdrawn: false, salary });
     } else {
-      golferDetails.push({ name, scoreToPar: null, pos: '', thru: '', earnings: 0, madeCut: true, withdrawn: false, salary });
+      const gs = getGolferScore(name);
+      if (gs) {
+        totalScore += gs.scoreToPar;
+        const earn = earningsMap[normalizeStr(name)] || earningsMap[NAME_ALIASES[normalizeStr(name)]] || 0;
+        totalEarnings += earn;
+        golferDetails.push({ name, scoreToPar: gs.scoreToPar, pos: gs.pos, thru: gs.thru, earnings: earn, madeCut: gs.madeCut, withdrawn: gs.withdrawn, salary });
+      } else {
+        golferDetails.push({ name, scoreToPar: null, pos: '', thru: '', earnings: 0, madeCut: true, withdrawn: false, salary });
+      }
     }
   });
   return { totalScore: hasScores ? totalScore : null, totalEarnings, golferDetails };
